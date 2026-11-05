@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OguzBot Kontrol Paneli</title>
+<meta name="description" content="ESP32-CAM canlı görüntü ve nesne tespiti kontrol paneli">
+<style>
+  :root { --bg:#0b0f1a; --kart:#141a2b; --kenar:#242d47; --metin:#e6e9f5; --soluk:#8a93b2; --vurgu:#6c8cff; --iyi:#3ddc97; --kotu:#ff5d6c; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:Inter,system-ui,Segoe UI,sans-serif; background:radial-gradient(1200px 600px at 20% -10%, #1b2550 0%, var(--bg) 60%); color:var(--metin); min-height:100vh; }
+  header { display:flex; align-items:center; justify-content:space-between; padding:18px 28px; border-bottom:1px solid var(--kenar); backdrop-filter:blur(8px); }
+  h1 { font-size:20px; margin:0; letter-spacing:.3px; }
+  h1 span { color:var(--vurgu); }
+  .durum { display:flex; align-items:center; gap:10px; font-size:14px; color:var(--soluk); }
+  .nokta { width:10px; height:10px; border-radius:50%; background:var(--kotu); box-shadow:0 0 10px var(--kotu); transition:.3s; }
+  .nokta.acik { background:var(--iyi); box-shadow:0 0 10px var(--iyi); animation:nabiz 1.6s infinite; }
+  @keyframes nabiz { 50% { opacity:.45; } }
+  main { display:grid; grid-template-columns:1fr 320px; gap:20px; padding:24px 28px; max-width:1300px; margin:auto; }
+  @media (max-width:900px) { main { grid-template-columns:1fr; } }
+  .kart { background:var(--kart); border:1px solid var(--kenar); border-radius:16px; padding:16px; box-shadow:0 10px 30px rgba(0,0,0,.35); }
+  .goruntu { position:relative; aspect-ratio:4/3; background:#05070d; border-radius:12px; overflow:hidden; display:flex; align-items:center; justify-content:center; }
+  .goruntu img { width:100%; height:100%; object-fit:contain; display:block; }
+  .etiket { position:absolute; top:10px; left:10px; background:rgba(0,0,0,.55); padding:4px 10px; border-radius:20px; font-size:12px; }
+  h2 { font-size:13px; text-transform:uppercase; letter-spacing:1.2px; color:var(--soluk); margin:0 0 12px; }
+  label { font-size:13px; color:var(--soluk); display:block; margin-bottom:6px; }
+  input { width:100%; padding:10px 12px; border-radius:10px; border:1px solid var(--kenar); background:#0d1220; color:var(--metin); font-size:14px; outline:none; transition:.2s; }
+  input:focus { border-color:var(--vurgu); box-shadow:0 0 0 3px rgba(108,140,255,.2); }
+  button { margin-top:10px; width:100%; padding:10px; border:0; border-radius:10px; background:linear-gradient(135deg,#6c8cff,#9a6cff); color:#fff; font-weight:600; cursor:pointer; transition:transform .15s, filter .15s; }
+  button:hover { transform:translateY(-1px); filter:brightness(1.1); }
+  .yan { display:flex; flex-direction:column; gap:20px; }
+  .satir { display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px dashed var(--kenar); font-size:14px; }
+  .satir:last-child { border:0; }
+  .satir b { color:var(--vurgu); font-weight:600; }
+  .yakinda { color:var(--soluk); font-size:13px; line-height:1.5; }
+  .anahtar { display:flex; align-items:center; justify-content:space-between; font-size:14px; margin-bottom:12px; }
+  .anahtar input { width:auto; accent-color:var(--vurgu); transform:scale(1.3); }
+  input[type=range] { padding:0; accent-color:var(--vurgu); }
+  .liste { max-height:220px; overflow:auto; margin-top:10px; }
+  .oge { display:flex; justify-content:space-between; padding:7px 10px; margin-bottom:6px; background:#0d1220; border:1px solid var(--kenar); border-radius:8px; font-size:13px; animation:gir .25s; }
+  .oge i { font-style:normal; color:var(--iyi); }
+  @keyframes gir { from { opacity:0; transform:translateY(4px); } }
+  .butonlar { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:6px; }
+  .butonlar button { margin-top:0; }
+  button:disabled { opacity:.5; cursor:wait; transform:none; }
+  button.ikincil { background:transparent; border:1px solid var(--kenar); color:var(--soluk); font-weight:500; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Oguz<span>Bot</span> Kontrol Paneli</h1>
+  <div class="durum"><div class="nokta" id="nokta"></div><span id="durumYazi">Bağlanıyor…</span></div>
+</header>
+<main>
+  <section class="kart">
+    <div class="goruntu">
+      <img id="video" alt="ESP32-CAM canlı görüntü">
+      <div class="etiket" id="etiket">CANLI</div>
+    </div>
+  </section>
+  <aside class="yan">
+    <section class="kart">
+      <h2>Kamera</h2>
+      <label for="ip">ESP32-CAM IP adresi</label>
+      <input id="ip" placeholder="10.25.66.134">
+      <button id="ipKaydet">Uygula</button>
+    </section>
+    <section class="kart">
+      <h2>Bilgi</h2>
+      <div class="satir"><span>Bağlantı</span><b id="bBagli">-</b></div>
+      <div class="satir"><span>FPS</span><b id="bFps">-</b></div>
+      <div class="satir"><span>Kamera</span><b id="bIp">-</b></div>
+      <div class="satir"><span>Model</span><b id="bModel">-</b></div>
+      <div class="satir"><span>Tespit</span><b id="bTespit">-</b></div>
+    </section>
+    <section class="kart">
+      <h2>Nesne tespiti</h2>
+      <div class="anahtar"><span>Tespit açık</span><input type="checkbox" id="tAktif" checked></div>
+      <label for="tGuven">Güven eşiği: <b id="tGuvenDeger">0.40</b></label>
+      <input type="range" id="tGuven" min="0.05" max="0.95" step="0.05" value="0.4">
+      <label for="tHedef" style="margin-top:12px">Sadece bu sınıflar (virgülle, boş = tümü)</label>
+      <input id="tHedef" placeholder="person, bottle">
+      <button id="tUygula">Uygula</button>
+      <div class="liste" id="liste"><div class="yakinda">Henüz nesne yok</div></div>
+    </section>
+  </aside>
+</main>
+<script>
+  const $ = id => document.getElementById(id);
+  let ayarYuklendi = false;
+  $('video').src = '/video';
+
+  async function durumYenile() {
+    try {
+      const d = await (await fetch('/api/durum')).json();
+      $('nokta').classList.toggle('acik', d.bagli);
+      $('durumYazi').textContent = d.bagli ? 'Kamera bağlı' : 'Kamera yok';
+      $('bBagli').textContent = d.bagli ? 'Evet' : 'Hayır';
+      $('bFps').textContent = d.fps;
+      $('bIp').textContent = d.ip;
+      $('bModel').textContent = d.model;
+      $('bTespit').textContent = d.tespit_aktif ? `${d.tespit_fps} FPS · ${d.tespit_ms} ms` : 'Kapalı';
+      if (!ayarYuklendi) {
+        $('tAktif').checked = d.tespit_aktif;
+        $('tGuven').value = d.guven; $('tGuvenDeger').textContent = Number(d.guven).toFixed(2);
+        $('tHedef').value = d.hedefler.join(', ');
+        ayarYuklendi = true;
+      }
+      if (document.activeElement !== $('ip') && !$('ip').value) $('ip').value = d.ip;
+    } catch (e) {
+      $('nokta').classList.remove('acik');
+      $('durumYazi').textContent = 'Sunucuya ulaşılamıyor';
+    }
+  }
+  $('ipKaydet').onclick = async () => {
+    await fetch('/api/ip', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ ip:$('ip').value }) });
+    durumYenile();
+  };
+  setInterval(durumYenile, 1000);
+  durumYenile();
+
+  $('tGuven').oninput = () => $('tGuvenDeger').textContent = Number($('tGuven').value).toFixed(2);
+  $('tUygula').onclick = async () => {
+    const hedefler = $('tHedef').value.split(',').map(s => s.trim()).filter(Boolean);
+    await fetch('/api/tespit-ayar', { method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({ aktif:$('tAktif').checked, guven:Number($('tGuven').value), hedefler }) });
+  };
+  $('tAktif').onchange = () => fetch('/api/tespit-ayar', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ aktif:$('tAktif').checked }) });
+
+  async function tespitYenile() {
+    try {
+      const { tespitler } = await (await fetch('/api/tespit')).json();
+      $('liste').innerHTML = tespitler.length
+        ? tespitler.map(t => `<div class="oge"><span>${t.etiket || t.sinif}</span><i>${(t.guven*100).toFixed(0)}%</i></div>`).join('')
+        : '<div class="yakinda">Nesne yok</div>';
+    } catch (e) {}
+  }
+  setInterval(tespitYenile, 500);
+
+</script>
+</body>
+</html>

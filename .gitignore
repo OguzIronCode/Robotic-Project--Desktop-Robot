@@ -1,0 +1,16 @@
+# Gizli bilgiler
+CameraWebServer/secrets.h
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# Kamera kayitlari / kisisel goruntuler
+OguzBot/kayit/
+*.jpg
+*.jpeg
+
+# Buyuk / lisans sorunlu model dosyalari (yolox_tiny.onnx haric)
+*.pt
+OguzBot/modeller/yolox_s.onnx

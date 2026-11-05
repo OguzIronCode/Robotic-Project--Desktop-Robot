@@ -1,0 +1,8 @@
+# Bu klasorde (OguzBot) calistirin
+
+# Sunucuyu baslat (ESP_IP: ESP32-CAM'in IP adresi)
+set ESP_IP=10.46.239.134
+py -m uvicorn sunucu:app --host 0.0.0.0 --port 8000
+
+# Tek kare testi
+py test_tek_kare.py --ip 10.46.239.134
